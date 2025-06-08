@@ -1,0 +1,33 @@
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Runtime directories that may be created during testing
+test_keys/
+temp_keys/
+
+# Container runtime files
+.container_id
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Local environment overrides
+.env.local
+docker-compose.override.yml
+
+# Backup files
+*.bak
+*.backup
