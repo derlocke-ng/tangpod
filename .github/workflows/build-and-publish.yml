@@ -93,7 +93,7 @@ jobs:
         
         # Clean up
         docker stop tang-test || true
-        rm -rf test_keys
+        rm -rf test_keys || true
 
   security-scan:
     runs-on: ubuntu-latest
