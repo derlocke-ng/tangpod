@@ -7,7 +7,7 @@ A containerized Tang server setup optimized for Podman with automatic key genera
 ## Features
 
 - 🔐 **Automatic Key Management**: Generates Tang keys if none exist, reuses existing keys
-- 🐳 **Container Ready**: Optimized for Podman and Docker
+- 🐳 **Container Ready**: Optimized for Podman and Docker with multi-platform support
 - 🛡️ **SELinux Compatible**: Proper labeling and permissions for SELinux systems
 - 🔧 **Easy Management**: Simple control script for container lifecycle
 - 📦 **Rootless Friendly**: Works with rootless Podman/Docker
