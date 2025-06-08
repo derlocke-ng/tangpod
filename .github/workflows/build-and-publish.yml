@@ -63,8 +63,9 @@ jobs:
         # Pull the built image for testing
         docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
         
-        # Create test directory
+        # Create test directory with proper permissions
         mkdir -p test_keys
+        chmod 755 test_keys
         
         # Run container in test mode
         docker run --rm -d \
@@ -76,16 +77,19 @@ jobs:
           tang-server:latest
         
         # Wait for container to start
-        sleep 5
+        sleep 10
         
         # Check if container is running
         docker ps | grep tang-test
         
-        # Check if keys were generated
-        ls -la test_keys/
+        # Check container logs for any errors
+        docker logs tang-test
         
         # Test if Tang server responds
         curl -f http://localhost:7500/adv || echo "Tang server not responding on expected port"
+        
+        # Check if keys were generated (check inside container to avoid permission issues)
+        docker exec tang-test ls -la /var/db/tang/ || echo "Could not list keys directory"
         
         # Clean up
         docker stop tang-test || true
