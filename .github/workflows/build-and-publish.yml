@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 0'  # At 03:00 UTC every Sunday
 
 env:
   REGISTRY: ghcr.io
