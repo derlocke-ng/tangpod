@@ -1,11 +1,15 @@
 #!/bin/bash
 set -e
 
-TANG_KEY_DIR="/var/db/tang"
-TANG_USER="tang"
-TANG_GROUP="tang"
+# Use environment variables set by the Containerfile, with fallbacks
+TANG_KEY_DIR="${TANG_KEY_DIR:-/var/db/tang}"
+TANG_USER="${TANG_USER:-tang}"
+TANG_GROUP="${TANG_GROUP:-tang}"
+TANG_UID="${TANG_UID:-1000}"
+TANG_GID="${TANG_GID:-1000}"
 
 echo "Starting Tang server entrypoint..."
+echo "Using UID:GID ${TANG_UID}:${TANG_GID} for ${TANG_USER}:${TANG_GROUP}"
 
 # Ensure the key directory exists
 if [ ! -d "${TANG_KEY_DIR}" ]; then
@@ -14,14 +18,15 @@ if [ ! -d "${TANG_KEY_DIR}" ]; then
 fi
 
 # Set correct ownership and permissions on the key directory
-chown "${TANG_USER}:${TANG_GROUP}" "${TANG_KEY_DIR}" || echo "Warning: Could not chown ${TANG_KEY_DIR}"
+# Using UID:GID directly to ensure proper permissions regardless of user namespace mapping
+chown "${TANG_UID}:${TANG_GID}" "${TANG_KEY_DIR}" || echo "Warning: Could not chown ${TANG_KEY_DIR}"
 chmod 700 "${TANG_KEY_DIR}"
 
 # Check if keys exist. If not, generate them.
 if ! ls "${TANG_KEY_DIR}"/*.jwk &>/dev/null; then
     echo "No keys found in ${TANG_KEY_DIR}. Generating new keys..."
-    # Generate keys as the tang user
-    setpriv --reuid="${TANG_USER}" --regid="${TANG_GROUP}" --clear-groups /usr/libexec/tangd-keygen "${TANG_KEY_DIR}"
+    # Generate keys as the tang user using UID:GID
+    setpriv --reuid="${TANG_UID}" --regid="${TANG_GID}" --clear-groups /usr/libexec/tangd-keygen "${TANG_KEY_DIR}"
     echo "Keys generated."
 else
     echo "Existing keys found in ${TANG_KEY_DIR}."

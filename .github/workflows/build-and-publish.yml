@@ -60,40 +60,71 @@ jobs:
 
     - name: Test container
       run: |
-        # Pull the built image for testing
-        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || true
+        # Pull the built image for testing (try different tag variations)
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || \
+        docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} || \
+        echo "Using locally built image"
         
-        # Create test directory with proper permissions
-        mkdir -p test_keys
-        chmod 755 test_keys
+        # Create a named volume for testing (eliminates permission issues)
+        docker volume create tang-test-keys
         
-        # Run container in test mode
+        # Run container in test mode with named volume
         docker run --rm -d \
           --name tang-test \
           -p 7500:80 \
-          -v "$(pwd)/test_keys:/var/db/tang" \
+          -v tang-test-keys:/var/db/tang \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest || \
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }} || \
           tang-server:latest
         
-        # Wait for container to start
-        sleep 10
+        # Wait for container to start and generate keys
+        sleep 15
         
         # Check if container is running
         docker ps | grep tang-test
         
         # Check container logs for any errors
+        echo "=== Container Logs ==="
         docker logs tang-test
         
-        # Test if Tang server responds
-        curl -f http://localhost:7500/adv || echo "Tang server not responding on expected port"
+        # Test if Tang server responds with valid JSON
+        echo "=== Testing Tang Server Response ==="
+        RESPONSE=$(curl -s http://localhost:7500/adv || echo '{"error": "no response"}')
+        echo "Response: $RESPONSE"
         
-        # Check if keys were generated (check inside container to avoid permission issues)
+        # Validate the response is proper JSON and contains expected fields
+        echo "$RESPONSE" | python3 -c "
+        import sys, json
+        try:
+            data = json.load(sys.stdin)
+            if 'payload' in data:
+                print('✅ Tang server responding with valid advertisement')
+                sys.exit(0)
+            else:
+                print('❌ Response missing payload field')
+                sys.exit(1)
+        except json.JSONDecodeError:
+            print('❌ Response is not valid JSON')
+            sys.exit(1)
+        "
+        
+        # Check if keys were generated inside the container
+        echo "=== Checking Key Generation ==="
         docker exec tang-test ls -la /var/db/tang/ || echo "Could not list keys directory"
+        
+        # Verify key count
+        KEY_COUNT=$(docker exec tang-test sh -c 'ls /var/db/tang/*.jwk 2>/dev/null | wc -l' || echo "0")
+        echo "Generated $KEY_COUNT key files"
+        
+        if [ "$KEY_COUNT" -gt 0 ]; then
+          echo "✅ Keys generated successfully"
+        else
+          echo "❌ No keys found"
+        fi
         
         # Clean up
         docker stop tang-test || true
-        rm -rf test_keys || true
+        docker volume rm tang-test-keys || true
 
   security-scan:
     runs-on: ubuntu-latest

@@ -2,6 +2,8 @@ FROM fedora:latest
 
 ARG TANG_USER=tang
 ARG TANG_GROUP=tang
+ARG TANG_UID=1000
+ARG TANG_GID=1000
 ARG TANG_KEY_DIR=/var/db/tang
 
 # Install Tang server and utility for privilege dropping
@@ -9,8 +11,17 @@ ARG TANG_KEY_DIR=/var/db/tang
 RUN dnf install -y tang hostname util-linux && \
     dnf clean all
 
-# The tang package on Fedora creates the 'tang' user and group.
-# We use ARGs for clarity, these are standard names for the tang package.
+# Modify the existing tang user/group to use standard UID/GID 1000:1000
+# This avoids user namespace mapping issues with rootless containers
+RUN usermod -u ${TANG_UID} ${TANG_USER} && \
+    groupmod -g ${TANG_GID} ${TANG_GROUP}
+
+# Set environment variables for the entrypoint script
+ENV TANG_USER=${TANG_USER} \
+    TANG_GROUP=${TANG_GROUP} \
+    TANG_UID=${TANG_UID} \
+    TANG_GID=${TANG_GID} \
+    TANG_KEY_DIR=${TANG_KEY_DIR}
 
 # Create the key directory structure within the image.
 # The actual keys will reside in the mounted volume from the host.
