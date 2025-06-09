@@ -142,8 +142,7 @@ Override by exporting before running commands, or edit at the top of `tangctl.sh
 
 - Runs as non-root user
 - Keys persist in named volume, not container
-- SELinux compatible
-- Minimal container exposure (only port 80 exposed)
+- Minimal container exposure (only port 7500 exposed)
 
 ---
 
@@ -168,4 +167,4 @@ MIT License. See [LICENSE](LICENSE).
 
 ---
 
-Made with ❤️ for the Tang and NBDE community
+Made with 🥝 for security enthusiasts
